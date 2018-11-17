@@ -1,0 +1,623 @@
+#-------------------------------------------------------------------------------------------#
+#										   EmpireEco										#
+#									   	BY: T Y L E R :0									#
+# ---------------------------------------[ DONT EDIT ]--------------------------------------#
+on script load:
+	# Loading
+	send "&8[&5EmpireEco&8] &7Loading..." to console
+	send "&8[&5EmpireEco&8] &aIs now loaded!" to console
+	load yaml "plugins/EmpireEco/config.yml" as "cconfig"
+	set the header of "cconfig" to "temp"
+	
+	# YML Values
+	if yaml node "currency.onStart.bronze" in "cconfig" doesn't have value:
+		set yaml value "currency.onStart.bronze" in "cconfig" to "25"
+	if yaml node "currency.onStart.silver" in "cconfig" doesn't have value:
+		set yaml value "currency.onStart.silver" in "cconfig" to "0"
+	if yaml node "currency.onStart.gold" in "cconfig" doesn't have value:
+		set yaml value "currency.onStart.gold" in "cconfig" to "0"
+	if yaml node "currency.banker.enderchest" in "cconfig" doesn't have value:
+		set yaml value "currency.banker.enderchest" in "cconfig" to "true"
+	if yaml node "modules.pickup_message.bronze" in "cconfig" doesn't have value:
+		set yaml value "modules.pickup_message.bronze" in "cconfig" to "true"
+	if yaml node "modules.pickup_message.silver" in "cconfig" doesn't have value:
+		set yaml value "modules.pickup_message.silver" in "cconfig" to "true"
+	if yaml node "modules.pickup_message.gold" in "cconfig" doesn't have value:
+		set yaml value "modules.pickup_message.gold" in "cconfig" to "true"
+	save yaml "cconfig"
+
+# If your server isn't released yet, please use on first join and not on join.
+#on first join:
+on join:
+	load yaml "plugins/RPGCoin/playerdata/%player%.yml" as "%player%Stats"
+	if yaml node "profile.stats.currency.bronze" in "%player%Stats" doesn't have value:
+		set {_bronze} to yaml value "currency.onStart.bronze" in "cconfig"
+		set yaml value "profile.stats.currency.bronze" in "%player%Stats" to "%{_bronze}%"
+	if yaml node "profile.stats.currency.silver" in "%player%Stats" doesn't have value:
+		set {_silver} to yaml value "currency.onStart.silver" in "cconfig"
+		set yaml value "profile.stats.currency.silver" in "%player%Stats" to "%{_silver}%"
+	if yaml node "profile.stats.currency.gold" in "%player%Stats" doesn't have value:
+		set {_gold} to yaml value "currency.onStart.gold" in "cconfig"
+		set yaml value "profile.stats.currency.gold" in "%player%Stats" to "%{_gold}%"
+	save yaml "%player%Stats"
+
+# ----------------[ API ]----------------#
+
+# This works just like the command. You can't take an amount more than 99.
+effect (remove|subtract) %number% [(1¦bronze)] [(2¦silver)] [(3¦gold)] (from|of) [(the)] (%player%'s vault|vault of %player%):
+	trigger:
+		set {_target1} to yaml value "profile.stats.currency.bronze" in "%expression-2%Stats"
+		set {_target2} to yaml value "profile.stats.currency.silver" in "%expression-2%Stats"
+		set {_target3} to yaml value "profile.stats.currency.gold" in "%expression-2%Stats"
+		if parse mark is 1:
+			if expression-1 <= 99:
+				if expression-1 > 0:
+					if expression-1 <= {_target1}:	
+						subtract expression-1 from {_target1}
+						set yaml value "profile.stats.currency.bronze" in "%expression-2%Stats" to "%{_target1}%"
+						save "%expression-2%Stats"
+		else if parse mark is 2:
+			if expression-1 <= 99:
+				if expression-1 > 0:
+					if expression-1 <= {_target2}:			
+						subtract expression-1 from {_target2}
+						set yaml value "profile.stats.currency.silver" in "%expression-2%Stats" to "%{_target2}%"
+						save "%expression-2%Stats"
+		else if parse mark is 3:
+			if expression-1 <= 99:
+				if expression-1 > 0:
+					if expression-1 <= {_target3}:	
+						subtract expression-1 from {_target3}
+						set yaml value "profile.stats.currency.gold" in "%expression-2%Stats" to "%{_target3}%"
+						save "%expression-2%Stats"
+
+# This works just like the command. You can't give an amount more than 99.
+effect (give|add) %number% [(1¦bronze)] [(2¦silver)] [(3¦gold)] to [(the)] (%player%'s vault|vault of %player%):
+	trigger:
+		set {_bronze} to yaml value "profile.stats.currency.bronze" in "%expression-2%Stats"
+		set {_silver} to yaml value "profile.stats.currency.silver" in "%expression-2%Stats"
+		set {_gold} to yaml value "profile.stats.currency.gold" in "%expression-2%Stats"
+		if parse mark is 1:
+			if expression-1 <= 99:
+				add expression-1 to {_bronze}
+				if {_bronze} >= 100:
+					subtract 100 from {_bronze}
+					add 1 to {_silver}
+					set yaml value "profile.stats.currency.silver" in "%expression-2%Stats" to "%{_silver}%"
+					if {_silver} >= 100:
+						subtract 100 from {_silver}
+						add 1 to {_gold}
+						set yaml value "profile.stats.currency.gold" in "%expression-2%Stats" to "%{_gold}%"
+				set yaml value "profile.stats.currency.bronze" in "%expression-2%Stats" to "%{_bronze}%"
+				save yaml "%expression-2%Stats"
+		if parse mark is 2:
+			if expression-1 <= 99:
+				add expression-1 to {_silver}
+				if {_silver} >= 100:
+					subtract 100 from {_silver}
+					add 1 to {_gold}
+					set yaml value "profile.stats.currency.gold" in "%expression-2%Stats" to "%{_gold}%"
+				set yaml value "profile.stats.currency.silver" in "%expression-2%Stats" to "%{_silver}%"
+				save yaml "%expression-2%Stats"
+		if parse mark is 3:
+			add expression-1 to {_gold}
+			set yaml value "profile.stats.currency.gold" in "%expression-2%Stats" to "%{_gold}%"
+			save "%expression-2%Stats"
+
+# If you want to get the amount of the player's type of coin.
+expression [(1¦%player%'s bronze)] [(2¦%player%'s silver)] [(3¦%player%'s gold)]:
+	get:
+		if parse mark is 1:
+			set {_value} to yaml value "profile.stats.currency.bronze" in "%expression-1%Stats"
+			return {_value}
+		else if parse mark is 2:
+			set {_value} to yaml value "profile.stats.currency.silver" in "%expression-1%Stats"
+			return {_value}
+		else if parse mark is 3:
+			set {_value} to yaml value "profile.stats.currency.gold" in "%expression-1%Stats"
+			return {_value}
+
+# Get the amount of type of coin from player's inventory. Physical items.
+expression [amount of] [(1¦bronze)] [(2¦silver)] [(3¦gold)] [found] in [the] %player%'s inventory:
+	get:
+		if parse mark is 1:
+			set {_value} to amount of brick named "&cBronze Coin" in expression-1's inventory
+			return {_value}
+		else if parse mark is 2:
+			set {_value} to amount of iron ingot named "&7Silver Coin" in expression-1's inventory
+			return {_value}
+		else if parse mark is 3:
+			set {_value} to amount of gold ingot named "&6Golden Coin" in expression-1's inventory
+			return {_value}
+
+# Remove an amount of type of coin from player's inventory
+effect remove %number% [of] [(1¦bronze)] [(2¦silver)] [(3¦gold)] coin[s] from [the] %player%'s inventory:
+	trigger:
+		if parse mark is 1:
+			remove expression-1 of brick named "&cBronze Coin" from expression-2's inventory
+		else if parse mark is 2:
+			remove expression-1 of iron ingot named "&7Silver Coin" from expression-2's inventory
+		else if parse mark is 3:
+			remove expression-1 of gold ingot named "&6Golden Coin" from expression-2's inventory
+
+# Get the yml value of a module.
+expression [empire[eco]] status (of|from) module %text%:
+	get:
+		set {_value} to yaml value "modules.%expression-1%" in "cconfig"
+		return {_value}
+
+# Condition to check of the module is true or false
+expression [empire[eco]] status (of|from) module %text% is [(1¦true|enabled)] [(2¦false|disabled)]:
+	get:
+		if parse mark is 1:
+			set {_value} to yaml value "modules.%expression-1%" in "cconfig"
+			if {_value} = true:
+				return true
+		else if parse mark is 2:
+			set {_value} to yaml value "modules.%expression-1%" in "cconfig"
+			if {_value} = false:
+				return true
+
+
+# ----------------[ FUNCTION(S) ]----------------#
+
+# to open the banker's main gui
+function openBankerGui(p: Player, type: String):
+	set {_bronze} to yaml value "profile.stats.currency.bronze" in "%{_p}%Stats"
+	set {_silver} to yaml value "profile.stats.currency.silver" in "%{_p}%Stats"
+	set {_gold} to yaml value "profile.stats.currency.gold" in "%{_p}%Stats"
+	set {_ec} to yaml value "currency.banker.enderchest" in "cconfig"
+	set {_ec} to "%{_ec}%"
+	if {_type} = "mainbanker":
+		open virtual chest inventory named "&a&nBanker" with size 1 to {_p}
+		wait 1 tick
+		if {_ec} = "true":
+			format gui slot 0 of {_p} with ender chest named "&dEnderchest" with lore "&7Click to open your Enderchest" to do nothing
+		else if {_ec} = "false":
+			format gui slot 0 of {_p} with air to do nothing
+		format gui slot 8 of {_p} with gold block named "&a&lVault" with lore "&cBronze: &f%{_bronze}% &7Left-Click||&7Silver: &f%{_silver}% &7Right-Click||&6Gold: %{_gold}% &7Middle-Click" to do nothing
+		format gui slot 7 of {_p} with book named "&aRefresh" with lore "&7Click to refresh this menu" to do nothing
+		format gui slot 2 of {_p} with air to do nothing
+		format gui slot 3 of {_p} with air to do nothing
+		format gui slot 4 of {_p} with air to do nothing
+		format gui slot 5 of {_p} with air to do nothing
+		format gui slot 6 of {_p} with air to do nothing
+		format gui slot 1 of {_p} with air to do nothing
+
+# step 1 to withdraw from your vault
+function startbankerwithdraw(p: Player, type: String):
+	close {_p}'s inventory
+	message "&aSend the amount you want to withdraw or (-) to cancel" to {_p}
+	if {_type} = "bronze":
+		set {banker.withdraw.bronze.%{_p}%} to true
+	if {_type} = "silver":
+		set {banker.withdraw.silver.%{_p}%} to true
+	if {_type} = "gold":
+		set {banker.withdraw.gold.%{_p}%} to true
+
+# go to events to see step 2
+# step 3 to withdraw from your vault
+function bankerwithdraw(p: Player, type: String, amount: Number):
+	set {_bronze} to yaml value "profile.stats.currency.bronze" in "%{_p}%Stats"
+	set {_silver} to yaml value "profile.stats.currency.silver" in "%{_p}%Stats"
+	set {_gold} to yaml value "profile.stats.currency.gold" in "%{_p}%Stats"
+	if {_type} = "bronze":
+		if {_amount} <= 0:
+			message "&cYou can't take 0 bronze" to {_p}
+		else if {_amount} <=  {_bronze}:
+			if {_p} doesn't have enough space for {_amount} of brick named "&cBronze Coin":
+				message "&cYou do not have enough space in your inventory" to {_p}
+			else:
+				subtract {_amount} from {_bronze}
+				give {_p} {_amount} of brick named "&cBronze Coin"
+				message "&aYou took %{_amount}%&c bronze &afrom your vault" to {_p}
+				set yaml value "profile.stats.currency.bronze" in "%{_p}%Stats" to "%{_bronze}%"
+				save yaml "%{_p}%Stats"
+				stop
+		else:
+			message "&cYou do not have that many bronze in your vault" to {_p}
+			stop
+	if {_type} = "silver":
+		if {_amount} <= 0:
+			message "&cYou can't take 0 silver" to {_p}
+		else if {_amount} <=  {_silver}:
+			if {_p} doesn't have enough space for {_amount} of iron ingot named "&7Silver Coin":
+				message "&cYou do not have enough space in your inventory" to {_p}
+			else:
+				subtract {_amount} from {_silver}
+				give {_p} {_amount} of iron ingot named "&7Silver Coin"
+				message "&aYou took %{_amount}%&7 silver &afrom your vault" to {_p}
+				set yaml value "profile.stats.currency.silver" in "%{_p}%Stats" to "%{_silver}%"
+				save yaml "%{_p}%Stats"
+				stop
+		else:
+			message "&cYou do not have that many silver in your vault" to {_p}
+			stop
+	if {_type} = "gold":
+		if {_amount} <= 0:
+			message "&cYou can't take 0 gold" to {_p}
+		else if {_amount} <=  {_gold}:
+			if {_p} doesn't have enough space for {_amount} of gold ingot named "&6Golden Coin":
+				message "&cYou do not have enough space in your inventory" to {_p}
+			else:
+				subtract {_amount} from {_gold}
+				give {_p} {_amount} of gold ingot named "&6Golden Coin"
+				message "&aYou took %{_amount}%&6 gold &afrom your vault" to {_p}
+				set yaml value "profile.stats.currency.gold" in "%{_p}%Stats" to "%{_gold}%"
+				save yaml "%{_p}%Stats"
+				stop
+		else:
+			message "&cYou do not have that many gold in your vault" to {_p}
+			stop
+
+
+# ----------------[ COMMANDS ]----------------#
+
+# Open the banker gui
+command /banker:
+	permission: rpg.player
+	permission message:: &cSorry! You don't have access to this command.
+	cooldown: 2 seconds
+	cooldown message: &cPlease wait before using this command again.
+	trigger:
+		openBankerGui(player, "mainbanker")
+
+# Check your coins without the need of the gui
+command /coins:
+	permission: rpg.player
+	permission message:: &cSorry! You don't have access to this command.
+	cooldown: 2 seconds
+	cooldown message: &cPlease wait before using this command again.
+	trigger:
+		set {_bronze} to amount of brick named "&cBronze Coin" in player's inventory
+		set {_silver} to amount of iron ingot named "&7Silver Coin" in player's inventory
+		set {_gold} to amount of gold ingot named "&6Golden Coin" in player's inventory
+		message "&8&m----------------"
+		message "&cBronze:&f %{_bronze}%"
+		message "&7Silver:&f %{_silver}%"
+		message "&6Gold: &f %{_gold}%"
+		message "&8&m----------------"
+
+# Admin command
+command /rpga [<text>] [<text>] [<player>] [<text>] [<number>]:
+	permission: rpg.admin
+	permission message:: &cSorry! You don't have access to this command.
+	cooldown: 2 seconds
+	cooldown message: &cPlease wait before using this command again.
+	trigger:
+		if arg-1 is not set:
+			message "&8&m----&b<> Required&8&m----&b[] Optional&8&m-------"
+			message "&d/rpga <about> <action> &8- &7Simple example about how the commands are done"
+			message "&d/rpga help [page] &8- &7Open the helping menu"
+		else if arg-1 is "help":
+			if arg-2 is not set:
+				message "&8&m----&b<> Required&8&m----&b[] Optional&8&m-------"
+				message "&d/rpga coins <give/take/reset> <player> <amount> &8- &7Explained itself"
+				message "&d/rpga coins <list/stats/get> <player>"
+				message "&d/rpga reload &8- &7Reload the script"
+			else if arg-2 is "1" or "one":
+				message "&8&m----&b<> Required&8&m----&b[] Optional&8&m-------"
+				message "&d/rpga coins <give/take/reset> <player> <amount> &8- &7Explained itself"
+				message "&d/rpga coins <list/stats/get> <player>"
+				message "&d/rpga reload &8- &7Reload the script"
+			else:
+				message "&cThis page doesn't exist yet."
+		else if arg-1 is "reload":
+			message "&8[&5!&8] &7Reloading..."
+			wait 5 ticks
+			execute console command "/sk reload EmpireEco"
+			message "&8[&5!&8] &aEmpireEco was reloaded!"
+		else if arg-1 is "coins":
+			set {_bronze} to yaml value "profile.stats.currency.bronze" in "%player%Stats"
+			set {_silver} to yaml value "profile.stats.currency.silver" in "%player%Stats"
+			set {_gold} to yaml value "profile.stats.currency.gold" in "%player%Stats"
+			if arg-2 is "give" or "add":
+				if arg-3 is set:
+					if arg-4 is "bronze":
+						if arg-5 <= 99:
+							set {_target} to yaml value "profile.stats.currency.bronze" in "%arg-3%Stats"
+							set {_target1} to yaml value "profile.stats.currency.silver" in "%arg-3%Stats"
+							set {_target2} to yaml value "profile.stats.currency.gold" in "%arg-3%Stats"
+							add arg-5 to {_target}
+							if {_target} >= 100:
+								subtract 100 from {_target}
+								add 1 to {_target1}
+								if {_target1} >= 100:
+									subtract 100 from {_target1}
+									add 1 to {_targe2}
+									set yaml value "profile.stats.currency.gold" in "%arg-3%Stats" to "%{_target2}%"
+								set yaml value "profile.stats.currency.silver" in "%arg-3%Stats" to "%{_target1}%"
+							set yaml value "profile.stats.currency.bronze" in "%arg-3%Stats" to "%{_target}%"
+							save "%arg-3%Stats"
+							message "&aAdded %arg-5% %arg-4% to %arg-3%'s Vault."
+							message "&a%arg-5% %arg-4% was added to your Vault." to arg-3
+						else:
+							message "&cYou can't give %arg-3% more than 99 %arg-4%"
+					else if arg-4 is "silver":
+						if arg-5 <= 99:
+							set {_target} to yaml value "profile.stats.currency.silver" in "%arg-3%Stats"
+							set {_target1} to yaml value "profile.stats.currency.gold" in "%arg-3%Stats"
+							add arg-5 to {_target}
+							if {_target} >= 100:
+								subtract 100 from {_target}
+								add 1 to {_target1}
+								set yaml value "profile.stats.currency.gold" in "%arg-3%Stats" to "%{_target1}%"
+							set yaml value "profile.stats.currency.silver" in "%arg-3%Stats" to "%{_target}%"
+							save "%arg-3%Stats"
+							message "&aAdded %arg-5% %arg-4% to %arg-3%'s Vault."
+							message "&a%arg-5% %arg-4% was added to your Vault." to arg-3
+						else:
+							message "&cYou can't give %arg-3% more than 99 %arg-4%"
+					else if arg-4 is "gold":
+						if arg-5 is set:
+							set {_target} to yaml value "profile.stats.currency.gold" in "%arg-3%Stats"
+							add arg-5 to {_target}
+							set yaml value "profile.stats.currency.gold" in "%arg-3%Stats" to "%{_target}%"
+							save "%arg-3%Stats"
+							message "&aAdded %arg-5% %arg-4% to %arg-3%'s Vault."
+							message "&a%arg-5% %arg-4% was added to your Vault." to arg-3
+						else:
+							message "&cPlease provide the amount you want to %arg-2%."
+					else:
+						message "&cPlease provide a valid type of coins."
+				else:
+					message "&cPlease provide the player's name"
+			else if arg-2 is "take" or "subtract":
+				if arg-3 is set:
+					if arg-4 is "bronze":
+						if arg-5 <= 99:
+							set {_target} to yaml value "profile.stats.currency.bronze" in "%arg-3%Stats"
+							if arg-5 <= {_target}:
+								if {_target} >= 0:
+									subtract arg-5 from {_target}	
+									set yaml value "profile.stats.currency.bronze" in "%arg-3%Stats" to "%{_target}%"
+									save "%arg-3%Stats"
+									message "&aRemoved %arg-5% %arg-4% from %arg-3%'s Vault"
+									message "&cAn admin removed %arg-5% %arg-4% from your Vault" to arg-3
+								else:
+									message "&cYou can't %arg-2% that amount"
+							else:
+								message "&cYou can't %arg-2% that amount"
+						else:
+							message "&cYou can't give %arg-3% more than 99 %arg-4%"
+					else if arg-4 is "silver":
+						if arg-5 <= 99:
+							set {_target} to yaml value "profile.stats.currency.silver" in "%arg-3%Stats"
+							if arg-5 <= {_target}:
+								if {_target} >= 0:
+									subtract arg-5 from {_target}	
+									set yaml value "profile.stats.currency.silver" in "%arg-3%Stats" to "%{_target}%"
+									save "%arg-3%Stats"
+									message "&aRemoved %arg-5% %arg-4% from %arg-3%'s Vault"
+									message "&cAn admin removed %arg-5% %arg-4% from your Vault" to arg-3
+								else:
+									message "&cYou can't %arg-2% that amount"
+							else:
+								message "&cYou can't %arg-2% that amount"
+						else:
+							message "&cYou can't give %arg-3% more than 99 %arg-4%"
+					else if arg-4 is "gold":
+						if arg-5 is set:
+							set {_target} to yaml value "profile.stats.currency.gold" in "%arg-3%Stats"
+							if arg-5 <= {_target}:
+								if {_target} >= 0:
+									subtract arg-5 from {_target}	
+									set yaml value "profile.stats.currency.gold" in "%arg-3%Stats" to "%{_target}%"
+									save "%arg-3%Stats"
+									message "&aRemoved %arg-5% %arg-4% from %arg-3%'s Vault"
+									message "&cAn admin removed %arg-5% %arg-4% from your Vault" to arg-3
+								else:
+									message "&cYou can't %arg-2% that amount"
+							else:
+								message "&cYou can't %arg-2% that amount"
+						else:
+							message "&cPlease provide the amount you want to %arg-2%."
+					else:
+						message "&cPlease provide a valid type of coins."
+				else:
+					message "&cPlease provide the player's name"
+			else if arg-2 is "reset":
+				if arg-3 is set:
+					set {_bronze} to yaml value "currency.onStart.bronze" in "cconfig"
+					set {_silver} to yaml value "currency.onStart.silver" in "cconfig"
+					set {_gold} to yaml value "currency.onStart.gold" in "cconfig"
+					set yaml value "profile.stats.currency.bronze" in "%arg-3%Stats" to "%{_bronze}%"
+					set yaml value "profile.stats.currency.silver" in "%arg-3%Stats" to "%{_silver}%"
+					set yaml value "profile.stats.currency.gold" in "%arg-3%Stats" to "%{_gold}%"
+					save "%arg-3%Stats"
+					message "&a%arg-3% Currency's Stats were reset."
+					message "&cYour Currency's Stats were reset." to arg-3
+				else:
+					message "&cPlease provide the name of the player."
+			else if arg-2 is "list" or "stats" or "get":
+				if arg-3 is set:
+					message "&8&m----------------"
+					message "&cBronze:&f %arg-3's bronze%"
+					message "&7Silver:&f %arg-3's silver%"
+					message "&6Gold: &f %arg-3's gold%"
+					message "&8&m----------------"
+				else:
+					message "&cPlease provide the name of the player."	
+			else:
+				message "&8&m----&b<> Required&8&m----&b[] Optional&8&m-------"
+				message "&d/rpga <about> <action> &8- &7Simple example about how the commands are done"
+				message "&d/rpga help [page] &8- &7Open the helping menu"				
+		else:
+			message "&8&m----&b<> Required&8&m----&b[] Optional&8&m-------"
+			message "&d/rpga <about> <action> &8- &7Simple example about how the commands are done"
+			message "&d/rpga help [page] &8- &7Open the helping menu"	
+
+
+
+
+
+
+
+# ----------------[ EVENTS ]----------------#
+
+# Related to the GUI(s)
+on inventory click:
+	if player's current inventory's name is "&a&nBanker":
+		cancel event
+		if clicked item is not air:
+			set {_bronze} to yaml value "profile.stats.currency.bronze" in "%player%Stats"
+			set {_silver} to yaml value "profile.stats.currency.silver" in "%player%Stats"
+			set {_gold} to yaml value "profile.stats.currency.gold" in "%player%Stats"
+			if clicked item is brick named "&cBronze Coin":
+				set {_amount} to item amount of clicked item
+				remove {_amount} of brick named "&cBronze Coin" from player's inventory
+				add {_amount} to {_bronze}
+				if {_bronze} >= 100:
+					subtract 100 from {_bronze}
+					add 1 to {_silver}
+					set yaml value "profile.stats.currency.silver" in "%player%Stats" to "%{_silver}%"
+					if {_silver} >= 100:
+						subtract 100 from {_silver}
+						add 1 to {_gold}
+						set yaml value "profile.stats.currency.gold" in "%player%Stats" to "%{_gold}%"
+				set yaml value "profile.stats.currency.bronze" in "%player%Stats" to "%{_bronze}%"
+				save yaml "%player%Stats"
+				message "&r     &aAdded &a+%{_amount}%&c&lB &ato your vault"
+			else if clicked item is iron ingot named "&7Silver Coin":
+				set {_amount} to item amount of clicked item
+				remove {_amount} of iron ingot named "&7Silver Coin" from player's inventory
+				add {_amount} to {_silver}
+				if {_silver} >= 100:
+					subtract 100 from {_silver}
+					add 1 to {_gold}
+					set yaml value "profile.stats.currency.gold" in "%player%Stats" to "%{_gold}%"
+				set yaml value "profile.stats.currency.silver" in "%player%Stats" to "%{_silver}%"
+				save yaml "%player%Stats"
+				message "&r     &aAdded &a+%{_amount}%&7&lS &ato your vault"
+			else if clicked item is gold ingot named "&6Golden Coin":
+				set {_amount} to item amount of clicked item
+				remove {_amount} of gold ingot named "&6Golden Coin" from player's inventory
+				add {_amount} to {_gold}
+				set yaml value "profile.stats.currency.gold" in "%player%Stats" to "%{_gold}%"
+				save yaml "%player%Stats"
+				message "&r     &aAdded &a+%{_amount}%&6&lG &ato your vault"
+			else if clicked item is book named "&aRefresh" with lore "&7Click to refresh this menu":
+				openBankerGui(player, "mainbanker")
+			else if clicked item is gold block named "&a&lVault" with lore "&cBronze: &f%{_bronze}% &7Left-Click||&7Silver: &f%{_silver}% &7Right-Click||&6Gold: %{_gold}% &7Middle-Click":
+				if clicked type is left mouse button:
+					startbankerwithdraw(player, "bronze")
+				else if clicked type is right mouse button:
+					startbankerwithdraw(player, "silver")
+				else if clicked type is middle mouse button:
+					startbankerwithdraw(player, "gold")
+			else if clicked item is ender chest named "&dEnderchest" with lore "&7Click to open your Enderchest":
+				open ender chest of player to player
+
+# step 2 to withdraw from your vault
+on chat:
+	if {banker.withdraw.bronze.%player%} is true:
+		cancel event
+		delete {banker.withdraw.bronze.%player%}
+		if message parsed as a number is a number:
+			bankerwithdraw(player, "bronze", message parsed as a number)
+		else if message is "-":
+			message "&cEvent was canceled"
+		else:
+			message "&cThat's not a number."
+	else if {banker.withdraw.silver.%player%} is true:
+		cancel event
+		delete {banker.withdraw.silver.%player%}
+		if message parsed as a number is a number:
+			bankerwithdraw(player, "silver", message parsed as a number)
+		else if message is "-":
+			message "&cEvent was canceled"
+		else:
+			message "&cThat's not a number."
+	else if {banker.withdraw.gold.%player%} is true:
+		cancel event
+		delete {banker.withdraw.gold.%player%}
+		if message parsed as a number is a number:
+			bankerwithdraw(player, "gold", message parsed as a number)
+		else if message is "-":
+			message "&cEvent was canceled"
+		else:
+			message "&cThat's not a number."
+
+# MODULE = pickup_message
+on pickup of brick or iron ingot or gold ingot:
+	if event-item's name is "&cBronze Coin" or "&7Silver Coin" or "&6Golden Coin":
+		set {_bronze} to yaml value "modules.pickup_message.bronze" in "cconfig"
+		set {_silver} to yaml value "modules.pickup_message.silver" in "cconfig"
+		set {_gold} to yaml value "modules.pickup_message.gold" in "cconfig"
+		set {_bronze} to "%{_bronze}%"
+		set {_silver} to "%{_silver}%"
+		set {_gold} to "%{_gold}%"
+		if event-item's name is "&cBronze Coin":
+			if {_bronze} = "true":
+				set {_amount} to item amount of event-item
+				message "&r               &c+%{_amount}%&lB" to player
+				play sound "BLOCK_ANVIL_HIT" to player with volume 1 and pitch 5
+		if event-item's name is "&7Silver Coin":
+			if {_silver} = "true":
+				set {_amount} to item amount of event-item
+				message "&r               &7+%{_amount}%&lS" to player
+				play sound "BLOCK_ANVIL_HIT" to player with volume 1 and pitch 5
+		if event-item's name is "&6Golden Coin":
+			if {_gold} = "true":
+				set {_amount} to item amount of event-item
+				message "&r               &6+%{_amount}%&lG" to player
+				play sound "BLOCK_ANVIL_HIT" to player with volume 1 and pitch 5
+
+
+# API EXAMPLES
+#command /test:
+#	trigger:
+#		subtract 1 bronze from vault of player
+#		subtract 1 silver from vault of player
+#		subtract 1 gold from vault of player
+
+#command /test1:
+#	trigger:
+#		give 1 bronze to vault of player
+#		give 1 silver to vault of player
+#		give 1 gold to vault of player
+
+#command /test2:
+#	trigger:
+#		broadcast "%player's bronze%"
+
+#command /test3:
+#	trigger:
+#		set {_text} to status of module "pickup_message.gold"
+#		if {_text} = true:
+#			broadcast "null 1"
+
+#command /test4:
+#    trigger:
+#        if status of module "pickup_message.gold" is false:
+#            broadcast "null 1"
+#        else:
+#            broadcast "false"
+
+
+# SHOP EXAMPLES
+# from banker
+#command /shop:
+#    trigger:
+#        if player's bronze >= 4:
+#            subtract 4 bronze from vault of player
+#            give player 1 apple
+#        else:
+#            message "&cYou don't have enough"
+
+# from inventory
+#command /shop:
+#    trigger:
+#       set {_value} to amount of bronze in player's inventory
+#       if {_value} >= 10:
+#          remove 10 bronze coins from player's inventory
+#          give player 1 apple
+#       else:
+#           message "&cYou don't have enough"
+
+
+#        if amount of bronze in player's inventory >= 10:
+#            remove 10 bronze coins from player's inventory
+#            give player 1 apple
+#        else:
+#            message "&cYou don't have enough"
